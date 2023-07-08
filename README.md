@@ -1,1 +1,0 @@
-# kloudworks-tech-challenge
