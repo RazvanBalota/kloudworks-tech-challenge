@@ -1,9 +1,9 @@
-import SearchCity from "./components/SearchCity";
+import SearchFunction from "./components/SearchFunction";
 
 function App() {
   return (
     <>
-      <SearchCity />
+      <SearchFunction />
     </>
   );
 }
