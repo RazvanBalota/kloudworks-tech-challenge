@@ -1,11 +1,9 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { GiHeavyRain } from "react-icons/gi";
-import { WiSunset, WiSunrise, WiHumidity } from "react-icons/wi";
-import { PiWind } from "react-icons/pi";
-import { BsMoon } from "react-icons/bs";
-import { AiOutlineInfo, AiOutlineSearch } from "react-icons/ai";
-import { FaTemperatureHigh, FaTemperatureLow } from "react-icons/fa";
+import axios from "axios";
+import Dashboard from "./Dashboard";
+import Bookmarks from "./Bookmarks";
+import SearchForm from "./SearchForm";
+import { toast } from "react-hot-toast";
 
 const API_KEY = "9d3d3af16d1544d1acf82850230807";
 
@@ -15,9 +13,14 @@ export default function SearchFunction() {
   const [currentWeather, setCurrentWeather] = useState([]);
   const [forecast, setForecast] = useState({});
   const [expandedItems, setExpandedItems] = useState([]);
-  const [weekly, setWeekly] = useState({});
   const [submit, setSubmit] = useState(false);
   const [error, setError] = useState("");
+  const [showDashboard, setShowDashboard] = useState(true);
+  const [showBookmarks, setShowbookmarks] = useState(false);
+  const [bookmarkedCities, setBookmarkedCities] = useState(() => {
+    const storedBookmarkedCities = localStorage.getItem("bookmarkedCities");
+    return storedBookmarkedCities ? JSON.parse(storedBookmarkedCities) : [];
+  });
 
   const submitHandler = (e) => {
     e.preventDefault();
@@ -31,8 +34,9 @@ export default function SearchFunction() {
         setCurrentWeather(response.data.current);
         setForecast(response.data.forecast.forecastday);
         setExpandedItems(new Array(response.data.forecast.forecastday.length).fill(false));
-        setWeekly(response.data.forecast.forecastday);
         setSubmit(true);
+        setShowDashboard(true);
+        setShowbookmarks(false);
       })
       .catch((error) => setError("Error fetchin weather details. Please try again..."));
   };
@@ -49,182 +53,98 @@ export default function SearchFunction() {
     });
   };
 
+  const handleDashboard = () => {
+    setShowDashboard(true);
+    setShowbookmarks(false);
+  };
+
+  const handleBookmarks = () => {
+    setShowDashboard(false);
+    setShowbookmarks(true);
+  };
+
+  const toggleBookmark = (index) => {
+    const bookmarkedCity = {
+      name: currentCity.name,
+      date: forecast[index].date,
+      currentCity: currentCity,
+      currentWeather: currentWeather,
+      forecast: forecast[index],
+      rain: forecast[index].day.daily_chance_of_rain,
+      icon: forecast[index].day.condition.icon,
+    };
+
+    const isBookmarked = bookmarkedCities.some(
+      (city) => city.name === currentCity.name && city.date === forecast[index].date
+    );
+
+    if (isBookmarked) {
+      setBookmarkedCities((prevBookmarkedCities) =>
+        prevBookmarkedCities.filter(
+          (city) => !(city.name === currentCity.name && city.date === forecast[index].date)
+        )
+      );
+    } else {
+      setBookmarkedCities((prevBookmarkedCities) => [...prevBookmarkedCities, bookmarkedCity]);
+    }
+  };
+
+  const removeBookmark = (id) => {
+    setBookmarkedCities((prevBookmarkedCities) => {
+      const updatedBookmarkedCities = [...prevBookmarkedCities];
+      const index = updatedBookmarkedCities.findIndex((city) => city.id === id);
+      if (index !== -1) {
+        updatedBookmarkedCities.splice(index, 1);
+      }
+      return updatedBookmarkedCities;
+    });
+  };
+
+  useEffect(() => {
+    localStorage.setItem("bookmarkedCities", JSON.stringify(bookmarkedCities));
+  }, [bookmarkedCities]);
+
   return (
-    <section className="lg:h-[700px] lg:w-[1200px] py-10">
+    <section className="lg:h-[700px] lg:w-[1400px] py-10">
       <div className="container mx-auto h-full border-2 rounded-2xl bg-[#f1f1f1] shadow">
         {/* Dashboard */}
+        <div className="flex justify-center items-center gap-x-5 pt-10 mb-4 lg:mb-0">
+          <button
+            onClick={handleDashboard}
+            className="hover:underline transition-all duration-150">
+            Dashboard
+          </button>
+          <button
+            onClick={handleBookmarks}
+            className="hover:underline transition-all duration-150">
+            Bookmarks ({bookmarkedCities.length})
+          </button>
+        </div>
         <div className="h-full w-full flex ">
           {/* Search */}
-          <div className="pt-4 gap-x-4 flex flex-col items-center px-2">
+          <div className="gap-x-4 flex flex-col items-center px-2">
             <div>
-              <form onSubmit={submitHandler}>
-                <div className="flex items-center justify-center lg:justify-start">
-                  <input
-                    type="text"
-                    placeholder="Enter a city"
-                    onChange={(e) => setCity(e.target.value)}
-                    className="py-2 px-4 outline-none rounded-lg shadow"
-                  />
-                  <button className="-ml-10">
-                    <AiOutlineSearch size={30} />
-                  </button>
-                </div>
-              </form>
-
-              {submit ? (
-                <div className="flex flex-col lg:flex-row gap-10">
-                  <div className="flex flex-col justify-center items-center lg:justify-start lg:items-start">
-                    {/* current weather */}
-                    <div className="w-72 flex flex-col px-4">
-                      <img
-                        src={currentWeather.condition.icon}
-                        alt=""
-                        className=" flex justify-center items-center h-full w-full"
-                      />
-                      <span className="text-3xl text-center mb-6">
-                        {Math.round(currentWeather.temp_c)}°C
-                      </span>
-                      <h1 className="text-xl font-semibold mb-5 text-center lg:text-left">
-                        {currentCity.name}, {currentCity.country}
-                      </h1>
-                      <hr />
-                      <div className="flex justify-between items-center lg:block mb-10">
-                        <div className="flex items-center mt-5">
-                          <img
-                            src={currentWeather.condition.icon}
-                            alt=""
-                            className="w-10 h-10"
-                          />
-                          <span className="text-sm text-gray-600">
-                            {currentWeather.condition.text}
-                          </span>
-                        </div>
-                        <div className="flex items-center mt-5 ml-3 gap-x-2">
-                          <GiHeavyRain size={20} />
-                          <span className="text-sm text-gray-600 text-bold">
-                            {Math.round(forecast[0].day.daily_chance_of_rain)}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    {/* forecast */}
-                    <div className="grid grid-cols-3 lg:flex lg:flex-row lg:justify-between gap-7">
-                      {forecast.map((day, index) => (
-                        <div
-                          key={index}
-                          className="border-2 rounded-lg w-24 h-32 flex flex-col items-center justify-center">
-                          <h2 className="text-xs">{day.date}</h2>
-                          <img
-                            src={day.day.condition.icon}
-                            alt=""
-                          />
-                          <div className="text-xs flex justify-between items-center gap-4">
-                            <span>H: {Math.round(day.day.maxtemp_c)}°</span>
-                            <span className="text-gray-400">
-                              L: {Math.round(day.day.mintemp_c)}°
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => handleShowMore(index)}
-                            className="text-xs pt-2 text-gray-500 hover:text-gray-800 transition-colors duration-150">
-                            Show more
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    {/* weather info */}
-                    <div>
-                      {forecast.map((info, index) =>
-                        expandedItems[index] ? (
-                          <div
-                            key={index}
-                            className="grid grid-cols-2 lg:grid-cols-4 gap-5 items-center lg:items-start mt-10 mb-10 ">
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <WiHumidity size={20} /> <span>Humidity</span>
-                              </h2>
-                              <span className="text-2xl flex justify-center items-center pt-4">
-                                {Math.round(info.day.avghumidity)}%
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <PiWind size={20} /> <span>Wind Speed</span>
-                              </h2>
-                              <span className="text-2xl flex justify-center items-center pt-4">
-                                {Math.round(info.day.maxwind_kph)}
-                                km/h
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600">Sunrise & Sunset</h2>
-                              <div className="flex flex-col justify-center items-center">
-                                <div className="text-md flex justify-center items-center gap-x-4">
-                                  <WiSunrise size={20} />
-                                  <span>{info.astro.sunrise}</span>
-                                </div>
-                                <div className="text-md flex justify-center items-center gap-x-4 ">
-                                  <WiSunset size={20} />
-                                  <span> {info.astro.sunset}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <BsMoon />
-                                <span>Moon phase</span>
-                              </h2>
-                              <span className="text-md flex justify-center items-center pt-4">
-                                {info.astro.moon_phase}
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <GiHeavyRain />
-                                <span>Chances of rain</span>
-                              </h2>
-                              <span className="text-2xl flex justify-center items-center pt-4">
-                                {info.day.daily_chance_of_rain}%
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <AiOutlineInfo />
-                                <span>Condition</span>
-                              </h2>
-                              <span className="text-md flex justify-center items-center pt-4">
-                                {info.day.condition.text}
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <FaTemperatureHigh />
-                                <span>Highest</span>
-                              </h2>
-                              <span className="text-2xl flex justify-center items-center pt-4">
-                                {Math.round(info.day.maxtemp_c)}°
-                              </span>
-                            </div>
-                            <div className="rounded-lg w-42 h-32 bg-white shadow">
-                              <h2 className="px-4 py-2 text-sm text-gray-600 flex items-center gap-x-2">
-                                <FaTemperatureLow />
-                                <span>Lowest</span>
-                              </h2>
-                              <span className="text-2xl flex justify-center items-center pt-4">
-                                {Math.round(info.day.mintemp_c)}°
-                              </span>
-                            </div>
-                          </div>
-                        ) : null
-                      )}
-                    </div>
-                  </div>
-                </div>
+              <SearchForm
+                city={city}
+                setCity={setCity}
+                submitHandler={submitHandler}
+                showDashboard={showDashboard}
+              />
+              {showDashboard ? (
+                <Dashboard
+                  submit={submit}
+                  currentCity={currentCity}
+                  currentWeather={currentWeather}
+                  forecast={forecast}
+                  expandedItems={expandedItems}
+                  handleShowMore={handleShowMore}
+                  toggleBookmark={toggleBookmark}
+                />
               ) : (
-                <div className="text-lg tracking-wide pt-10">Please search for a city</div>
+                <Bookmarks
+                  bookmarkedCities={bookmarkedCities}
+                  removeBookmark={removeBookmark}
+                />
               )}
             </div>
           </div>
