@@ -4,6 +4,10 @@ This is a simple weather application built using React. It allows users to searc
 view its current weather and 7-day forecast. Users can also bookmark cities and view them in the
 bookmarked cities tab.
 
+## Demo
+
+![Demo](https://razvi42.github.io/kloudworks-tech-challenge/)
+
 ## Features
 
 - Search for a city to view its current weather and 7-day forecast.
