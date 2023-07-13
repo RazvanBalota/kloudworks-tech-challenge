@@ -6,7 +6,7 @@ bookmarked cities tab.
 
 ## Demo
 
-![Demo](https://razvi42.github.io/kloudworks-tech-challenge/)
+[Demo](https://razvi42.github.io/kloudworks-tech-challenge/)
 
 ## Features
 
